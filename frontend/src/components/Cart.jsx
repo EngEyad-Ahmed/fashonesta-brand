@@ -4,6 +4,7 @@ import { ShoppingCart, X, Plus, Minus, Trash2, ArrowLeft, Tag } from "lucide-rea
 import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
 import Checkout from "./Checkout";
+import { Link } from "react-router-dom";
 
 function Cart() {
   const {
@@ -198,7 +199,7 @@ function Cart() {
                 اكتشفي تشكيلتنا واختاري ما يناسبك.
               </p>
 
-              <button
+              <Link to="/products"
                 type="button"
                 onClick={closeCart}
                 className="
@@ -215,7 +216,7 @@ function Cart() {
                 "
               >
                 ابدئي التسوق
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-4">

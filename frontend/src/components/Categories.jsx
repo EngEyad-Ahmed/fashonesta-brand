@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 function Categories() {
   const [isVisible, setIsVisible] = useState(false);
@@ -164,13 +165,13 @@ function Categories() {
                 ملابس حريمي
               </h3>
 
-              <p className="text-gray-200 leading-7 max-w-md mb-6">
-                اكتشفي أحدث التصميمات من الدريسات والبلوزات والسوتات والجيبات
-                والبناطيل.
+<p className="text-gray-200 leading-7 max-w-md mb-6">
+                اكتشفي أحدث التصميمات من الدريسات والبدي سوت والبناطيل
+                والبلوزات.
               </p>
 
-              <a
-                href="#products"
+              <Link
+                to="/products?type=حريمي"
                 className="
                   inline-flex
                   items-center
@@ -196,7 +197,7 @@ function Categories() {
                 >
                   ←
                 </span>
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -321,8 +322,8 @@ function Categories() {
                 التصميمات.
               </p>
 
-              <a
-                href="#products"
+              <Link
+                to="/products?type=بنات"
                 className="
                   inline-flex
                   items-center
@@ -348,7 +349,7 @@ function Categories() {
                 >
                   ←
                 </span>
-              </a>
+              </Link>
             </div>
           </div>
         </div>

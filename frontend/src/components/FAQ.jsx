@@ -150,12 +150,15 @@ function FAQ() {
           <p className="text-sm text-gray-500">
             لم تجدي إجابتك؟{" "}
 
-            <a
-              href="#contact"
+            <button
+              type="button"
+              onClick={() =>
+                document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" })
+              }
               className="text-[#D4AF37] font-bold hover:text-[#C9A227] transition-colors"
             >
               تواصلي معنا
-            </a>
+            </button>
           </p>
         </div>
       </div>

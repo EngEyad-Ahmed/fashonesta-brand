@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import { ToastProvider } from "./context/ToastContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
@@ -17,7 +18,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           <OrdersProvider>
             <WishlistProvider>
               <SearchProvider>
-                <App />
+                <BrowserRouter>
+                  <App />
+                </BrowserRouter>
               </SearchProvider>
             </WishlistProvider>
           </OrdersProvider>

@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import { useEffect, useState } from "react";
 
 function Hero() {
@@ -129,8 +131,8 @@ function Hero() {
               }
             `}
           >
-            <a
-              href="#products"
+            <Link
+              to="/products"
               className="
                 min-w-[170px]
                 px-8
@@ -149,10 +151,10 @@ function Hero() {
               "
             >
               تسوقي الآن
-            </a>
+            </Link>
 
-            <a
-              href="#products"
+            <Link
+              to="/products"
               className="
                 min-w-[170px]
                 px-8
@@ -172,7 +174,7 @@ function Hero() {
               "
             >
               اكتشفي المجموعة
-            </a>
+            </Link>
           </div>
         </div>
       </div>

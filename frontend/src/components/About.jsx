@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { ArrowLeft, Check, Sparkles } from "lucide-react";
 
 function About() {
@@ -314,8 +315,8 @@ function About() {
 
             {/* Button */}
 
-            <a
-              href="#products"
+            <Link
+              to="/products"
               className="
                 group
                 inline-flex
@@ -344,7 +345,7 @@ function About() {
                   group-hover:-translate-x-2
                 "
               />
-            </a>
+            </Link>
           </div>
         </div>
 

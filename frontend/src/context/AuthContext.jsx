@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { uid } from "../utils/format";
+import { demoUser } from "../data/demo";
 
 const AuthContext = createContext(null);
 
@@ -23,8 +24,18 @@ function load(key, fallback) {
   }
 }
 
+function loadUsers() {
+  const saved = load(USERS_KEY, []);
+
+  if (!saved.some((u) => u.id === demoUser.id)) {
+    return [...saved, demoUser];
+  }
+
+  return saved;
+}
+
 export function AuthProvider({ children }) {
-  const [users, setUsers] = useState(() => load(USERS_KEY, []));
+  const [users, setUsers] = useState(() => loadUsers());
   const [currentUser, setCurrentUser] = useState(() => load(SESSION_KEY, null));
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 

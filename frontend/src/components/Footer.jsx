@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowUp, Heart, Mail, MapPin, Phone } from "lucide-react";
+import { useCart } from "../context/CartContext";
+import { useWishlist } from "../context/WishlistContext";
 
 function Footer() {
   const [isVisible, setIsVisible] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { openCart } = useCart();
+  const { openWishlist } = useWishlist();
+
+  const isHome = location.pathname === "/";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -30,6 +39,22 @@ function Footer() {
       top: 0,
       behavior: "smooth",
     });
+  };
+
+  const goToSection = (id) => {
+    if (!isHome) {
+      navigate("/", { state: { scrollTo: id } });
+      return;
+    }
+
+    const element = document.getElementById(id);
+
+    if (element) {
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
   };
 
   return (
@@ -71,7 +96,7 @@ function Footer() {
           {/* ========================= */}
 
           <div className="lg:col-span-1">
-            <a href="#home" className="inline-block mb-6 group">
+            <Link to="/" className="inline-block mb-6 group">
               <div className="text-2xl font-bold tracking-wide">
                 <span className="text-white group-hover:text-[#D4AF37] transition-colors duration-300">
                   فاشونيستا
@@ -79,7 +104,7 @@ function Footer() {
 
                 <span className="text-[#D4AF37] mr-2">للموضة</span>
               </div>
-            </a>
+            </Link>
 
             <p className="text-gray-400 leading-8 text-sm max-w-sm">
               عالم من الأناقة والموضة يجمع بين أحدث التصميمات والجودة العالية،
@@ -194,51 +219,53 @@ function Footer() {
 
             <ul className="space-y-4">
               <li>
-                <a
-                  href="#home"
+                <Link
+                  to="/"
                   className="group flex items-center gap-2 text-gray-400 hover:text-[#D4AF37] transition-colors duration-300"
                 >
                   <span className="text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     ←
                   </span>
                   الرئيسية
-                </a>
+                </Link>
               </li>
 
               <li>
-                <a
-                  href="#about"
+                <button
+                  type="button"
+                  onClick={() => goToSection("about")}
                   className="group flex items-center gap-2 text-gray-400 hover:text-[#D4AF37] transition-colors duration-300"
                 >
                   <span className="text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     ←
                   </span>
                   من نحن
-                </a>
+                </button>
               </li>
 
               <li>
-                <a
-                  href="#products"
+                <Link
+                  to="/products"
                   className="group flex items-center gap-2 text-gray-400 hover:text-[#D4AF37] transition-colors duration-300"
                 >
                   <span className="text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     ←
                   </span>
                   المنتجات
-                </a>
+                </Link>
               </li>
 
               <li>
-                <a
-                  href="#offers"
+                <button
+                  type="button"
+                  onClick={() => goToSection("offers")}
                   className="group flex items-center gap-2 text-gray-400 hover:text-[#D4AF37] transition-colors duration-300"
                 >
                   <span className="text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     ←
                   </span>
                   العروض
-                </a>
+                </button>
               </li>
             </ul>
           </div>
@@ -255,63 +282,67 @@ function Footer() {
 
             <ul className="space-y-4">
               <li>
-                <a
-                  href="#contact"
+                <button
+                  type="button"
+                  onClick={() => goToSection("contact")}
                   className="group flex items-center gap-2 text-gray-400 hover:text-[#D4AF37] transition-colors duration-300"
                 >
                   <span className="text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     ←
                   </span>
                   تواصل معنا
-                </a>
+                </button>
               </li>
 
               <li>
-                <a
-                  href="#faq"
+                <button
+                  type="button"
+                  onClick={() => goToSection("faq")}
                   className="group flex items-center gap-2 text-gray-400 hover:text-[#D4AF37] transition-colors duration-300"
                 >
                   <span className="text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     ←
                   </span>
                   الأسئلة الشائعة
-                </a>
+                </button>
               </li>
 
               <li>
-                <a
-                  href="#contact"
+                <Link
+                  to="/account"
                   className="group flex items-center gap-2 text-gray-400 hover:text-[#D4AF37] transition-colors duration-300"
                 >
                   <span className="text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     ←
                   </span>
                   حسابي
-                </a>
+                </Link>
               </li>
 
               <li>
-                <a
-                  href="#products"
+                <button
+                  type="button"
+                  onClick={openWishlist}
                   className="group flex items-center gap-2 text-gray-400 hover:text-[#D4AF37] transition-colors duration-300"
                 >
                   <span className="text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     ←
                   </span>
                   المفضلة
-                </a>
+                </button>
               </li>
 
               <li>
-                <a
-                  href="#products"
+                <button
+                  type="button"
+                  onClick={openCart}
                   className="group flex items-center gap-2 text-gray-400 hover:text-[#D4AF37] transition-colors duration-300"
                 >
                   <span className="text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     ←
                   </span>
                   سلة التسوق
-                </a>
+                </button>
               </li>
             </ul>
           </div>

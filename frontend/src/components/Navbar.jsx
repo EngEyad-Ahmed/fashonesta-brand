@@ -2,6 +2,8 @@ import { Search, Heart, ShoppingCart, User, Menu, X } from "lucide-react";
 
 import { useEffect, useState } from "react";
 
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
 import { useSearch } from "../context/SearchContext";
@@ -21,6 +23,10 @@ function Navbar() {
 
   const { currentUser, openAuth } = useAuth();
 
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isHome = location.pathname === "/";
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
@@ -38,9 +44,14 @@ function Navbar() {
     };
   }, []);
 
-  // Smooth Scroll
-  const handleNavigation = (id) => {
+  // Smooth Scroll (go home first if needed)
+  const goToSection = (id) => {
     setIsMenuOpen(false);
+
+    if (!isHome) {
+      navigate("/", { state: { scrollTo: id } });
+      return;
+    }
 
     const element = document.getElementById(id);
 
@@ -73,17 +84,18 @@ function Navbar() {
     if (!searchQuery.trim()) return;
 
     closeSearch();
+    navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
+  };
 
-    setTimeout(() => {
-      const element = document.getElementById("products");
+  // حسابي: صفحة الحساب لو مسجل، وإلا نافذة تسجيل الدخول
+  const handleAccountClick = () => {
+    setIsMenuOpen(false);
 
-      if (element) {
-        element.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }
-    }, 100);
+    if (currentUser) {
+      navigate("/account");
+    } else {
+      openAuth();
+    }
   };
 
   return (
@@ -129,7 +141,7 @@ function Navbar() {
           {/* Logo */}
           <button
             type="button"
-            onClick={() => handleNavigation("home")}
+            onClick={() => goToSection("home")}
             className="group shrink-0 text-right"
           >
             <div className="leading-none">
@@ -168,7 +180,7 @@ function Navbar() {
           <div className="hidden lg:flex items-center gap-7 xl:gap-9">
             <button
               type="button"
-              onClick={() => handleNavigation("home")}
+              onClick={() => goToSection("home")}
               className="
                 relative
                 text-sm
@@ -198,7 +210,7 @@ function Navbar() {
 
             <button
               type="button"
-              onClick={() => handleNavigation("about")}
+              onClick={() => goToSection("about")}
               className="
                 relative
                 text-sm
@@ -226,9 +238,8 @@ function Navbar() {
               />
             </button>
 
-            <button
-              type="button"
-              onClick={() => handleNavigation("products")}
+            <Link
+              to="/products"
               className="
                 relative
                 text-sm
@@ -254,11 +265,11 @@ function Navbar() {
                   duration-300
                 "
               />
-            </button>
+            </Link>
 
             <button
               type="button"
-              onClick={() => handleNavigation("offers")}
+              onClick={() => goToSection("offers")}
               className="
                 relative
                 text-sm
@@ -288,7 +299,7 @@ function Navbar() {
 
             <button
               type="button"
-              onClick={() => handleNavigation("contact")}
+              onClick={() => goToSection("contact")}
               className="
                 relative
                 text-sm
@@ -453,7 +464,7 @@ function Navbar() {
             <button
               type="button"
               aria-label="حسابي"
-              onClick={openAuth}
+              onClick={handleAccountClick}
               className="
                 group
                 w-9
@@ -529,7 +540,7 @@ function Navbar() {
             <div className="flex flex-col gap-5">
               <button
                 type="button"
-                onClick={() => handleNavigation("home")}
+                onClick={() => goToSection("home")}
                 className="
                   text-right
                   text-white
@@ -543,7 +554,7 @@ function Navbar() {
 
               <button
                 type="button"
-                onClick={() => handleNavigation("about")}
+                onClick={() => goToSection("about")}
                 className="
                   text-right
                   text-white
@@ -555,10 +566,11 @@ function Navbar() {
                 من نحن
               </button>
 
-              <button
-                type="button"
-                onClick={() => handleNavigation("products")}
+              <Link
+                to="/products"
+                onClick={() => setIsMenuOpen(false)}
                 className="
+                  block
                   text-right
                   text-white
                   hover:text-[#D4AF37]
@@ -567,11 +579,11 @@ function Navbar() {
                 "
               >
                 المنتجات
-              </button>
+              </Link>
 
               <button
                 type="button"
-                onClick={() => handleNavigation("offers")}
+                onClick={() => goToSection("offers")}
                 className="
                   text-right
                   text-white
@@ -585,7 +597,7 @@ function Navbar() {
 
               <button
                 type="button"
-                onClick={() => handleNavigation("contact")}
+                onClick={() => goToSection("contact")}
                 className="
                   text-right
                   text-white
@@ -709,10 +721,7 @@ function Navbar() {
                 <button
                   type="button"
                   aria-label="حسابي"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    openAuth();
-                  }}
+                  onClick={handleAccountClick}
                   className="
                     relative
                     text-white
