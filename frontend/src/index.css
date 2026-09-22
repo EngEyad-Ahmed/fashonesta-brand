@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+@keyframes modalBackground {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes productModal {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modalBackground {
+  animation: modalBackground 300ms ease-out;
+}
+
+.animate-productModal {
+  animation: productModal 400ms ease-out;
+}
