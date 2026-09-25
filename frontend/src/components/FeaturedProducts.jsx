@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { products } from "../data/products";
+import { useProducts } from "../context/ProductsContext";
 import ProductCard from "./ProductCard";
 
 function FeaturedProducts() {
+  const { products } = useProducts();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {

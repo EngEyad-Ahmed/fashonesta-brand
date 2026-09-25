@@ -107,7 +107,7 @@ function Checkout({ onBack }) {
     showToast("تم تعبئة العنوان المحفوظ");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (
@@ -132,20 +132,27 @@ function Checkout({ onBack }) {
 
     const total = cartTotal + shippingCost;
 
-    const order = createOrder({
-      items: cartItemsSnapshot,
-      subtotal,
-      discount,
-      shippingCost,
-      total,
-      payment: paymentMethod,
-      shipping: {
-        name: formData.name.trim(),
-        phone: formData.phone.trim(),
-        governorate: formData.governorate.trim(),
-        address: formData.address.trim(),
-      },
-    });
+    let order;
+
+    try {
+      order = await createOrder({
+        items: cartItemsSnapshot,
+        subtotal,
+        discount,
+        shippingCost,
+        total,
+        payment: paymentMethod,
+        shipping: {
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          governorate: formData.governorate.trim(),
+          address: formData.address.trim(),
+        },
+      });
+    } catch (err) {
+      showToast(err.message || "تعذر تسجيل الطلب، حاولي مرة أخرى", "error");
+      return;
+    }
 
     const productsMessage = cartItems
       .map((item, index) => {
@@ -433,12 +440,12 @@ ${discountLine ? `${discountLine}\n` : ""}الشحن: ${shippingCost === 0 ? "م
               </div>
 
               {/* Saved Addresses */}
-              {currentUser && currentUser.addresses.length > 0 && (
+              {currentUser && (currentUser.addresses || []).length > 0 && (
                 <div>
                   <h3 className="font-bold mb-3 text-sm">العناوين المحفوظة</h3>
 
                   <div className="space-y-2">
-                    {currentUser.addresses.map((address) => (
+                    {(currentUser.addresses || []).map((address) => (
                       <button
                         key={address.id}
                         type="button"

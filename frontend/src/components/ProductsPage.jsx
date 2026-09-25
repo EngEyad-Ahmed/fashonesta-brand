@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 
-import { products, categories, productTypes } from "../data/products";
+import { useProducts } from "../context/ProductsContext";
 import { calcDiscountPercent, parsePrice } from "../utils/format";
 import ProductCard from "./ProductCard";
 
@@ -16,6 +16,7 @@ const priceRanges = [
 ];
 
 function ProductsPage() {
+  const { products, categories, productTypes } = useProducts();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const activeCategory = searchParams.get("category") || "الكل";
@@ -118,7 +119,7 @@ function ProductsPage() {
     }
 
     return sorted;
-  }, [searchQuery, activeCategory, activeType, priceRangeId, discountOnly, sortOrder]);
+  }, [searchQuery, activeCategory, activeType, priceRangeId, discountOnly, sortOrder, products]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);

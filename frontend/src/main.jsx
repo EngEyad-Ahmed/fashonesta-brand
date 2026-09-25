@@ -8,6 +8,7 @@ import { CartProvider } from "./context/CartContext.jsx";
 import { OrdersProvider } from "./context/OrdersContext.jsx";
 import { WishlistProvider } from "./context/WishlistContext.jsx";
 import { SearchProvider } from "./context/SearchContext.jsx";
+import { ProductsProvider } from "./context/ProductsContext.jsx";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -17,11 +18,13 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <CartProvider>
           <OrdersProvider>
             <WishlistProvider>
-              <SearchProvider>
-                <BrowserRouter>
-                  <App />
-                </BrowserRouter>
-              </SearchProvider>
+              <ProductsProvider>
+                <SearchProvider>
+                  <BrowserRouter>
+                    <App />
+                  </BrowserRouter>
+                </SearchProvider>
+              </ProductsProvider>
             </WishlistProvider>
           </OrdersProvider>
         </CartProvider>

@@ -121,7 +121,7 @@ function Account() {
         {/* Footer Note */}
         <div className="p-5 border-t border-white/10">
           <p className="text-center text-xs text-gray-600">
-            بياناتك محفوظة بأمان على جهازك
+            بياناتك محفوظة بأمان على الخادم
           </p>
         </div>
       </div>

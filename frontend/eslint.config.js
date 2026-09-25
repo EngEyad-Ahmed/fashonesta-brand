@@ -31,6 +31,7 @@ export default defineConfig([
             'useAuth',
             'useOrders',
             'useToast',
+            'useProducts',
           ],
         },
       ],

@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { Lock, Phone, Sparkles, User } from "lucide-react";
+import { Lock, Phone, User } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
-import { DEMO_PHONE, DEMO_PASSWORD } from "../data/demo";
 
 function AuthForms({ onSuccess }) {
   const { register, login } = useAuth();
@@ -25,12 +24,15 @@ function AuthForms({ onSuccess }) {
     }));
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    const result = login({
+    const result = await login({
+
       phone: form.phone,
+
       password: form.password,
+
     });
 
     if (result.ok) {
@@ -41,7 +43,7 @@ function AuthForms({ onSuccess }) {
     }
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
 
     if (form.password !== form.confirm) {
@@ -49,7 +51,7 @@ function AuthForms({ onSuccess }) {
       return;
     }
 
-    const result = register({
+    const result = await register({
       name: form.name,
       phone: form.phone,
       password: form.password,
@@ -57,20 +59,6 @@ function AuthForms({ onSuccess }) {
 
     if (result.ok) {
       showToast(`تم إنشاء حسابك، أهلاً بك ${form.name.trim()}`);
-      if (onSuccess) onSuccess();
-    } else {
-      showToast(result.error, "error");
-    }
-  };
-
-  const handleDemoLogin = () => {
-    const result = login({
-      phone: DEMO_PHONE,
-      password: DEMO_PASSWORD,
-    });
-
-    if (result.ok) {
-      showToast("تم الدخول بالحساب التجريبي — كل البيانات معبأة مسبقاً");
       if (onSuccess) onSuccess();
     } else {
       showToast(result.error, "error");
@@ -122,36 +110,6 @@ function AuthForms({ onSuccess }) {
         </button>
       </div>
 
-      {/* Demo Account */}
-      <button
-        type="button"
-        onClick={handleDemoLogin}
-        className="
-          w-full
-          mb-6
-          py-3.5
-          rounded-xl
-          border
-          border-dashed
-          border-[#D4AF37]/50
-          bg-[#D4AF37]/5
-          text-[#D4AF37]
-          font-bold
-          text-sm
-          flex
-          items-center
-          justify-center
-          gap-2
-          hover:bg-[#D4AF37]/15
-          hover:border-[#D4AF37]
-          transition-all
-          duration-300
-        "
-      >
-        <Sparkles size={17} />
-        جرّبي الحساب التجريبي (بيانات وعناوين وطلبات جاهزة)
-      </button>
-
       {mode === "login" ? (
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -180,6 +138,7 @@ function AuthForms({ onSuccess }) {
                   outline-none
                   focus:border-[#D4AF37]
                   transition
+                  text-white
                 "
               />
             </div>
@@ -211,6 +170,7 @@ function AuthForms({ onSuccess }) {
                   outline-none
                   focus:border-[#D4AF37]
                   transition
+                  text-white
                 "
               />
             </div>
@@ -265,6 +225,7 @@ function AuthForms({ onSuccess }) {
                   outline-none
                   focus:border-[#D4AF37]
                   transition
+                  text-white
                 "
               />
             </div>
@@ -296,6 +257,7 @@ function AuthForms({ onSuccess }) {
                   outline-none
                   focus:border-[#D4AF37]
                   transition
+                  text-white
                 "
               />
             </div>
@@ -327,6 +289,7 @@ function AuthForms({ onSuccess }) {
                   outline-none
                   focus:border-[#D4AF37]
                   transition
+                  text-white
                 "
               />
             </div>
@@ -358,6 +321,7 @@ function AuthForms({ onSuccess }) {
                   outline-none
                   focus:border-[#D4AF37]
                   transition
+                  text-white
                 "
               />
             </div>
@@ -381,11 +345,6 @@ function AuthForms({ onSuccess }) {
           </button>
         </form>
       )}
-
-      {/* Demo Hint */}
-      <p className="mt-5 pt-4 border-t border-white/10 text-center text-xs text-gray-600">
-        بيانات الحساب التجريبي: {DEMO_PHONE} / {DEMO_PASSWORD}
-      </p>
     </div>
   );
 }

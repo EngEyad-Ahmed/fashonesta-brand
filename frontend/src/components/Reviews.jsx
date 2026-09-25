@@ -1,63 +1,64 @@
 import { useEffect, useState } from "react";
-import { Check, MessageSquare, Star, X } from "lucide-react";
+import { MessageSquare, Star } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { formatDate } from "../utils/format";
-
-const REVIEWS_KEY = "fashionistaProductReviewsV1";
-
-function loadReviews() {
-  try {
-    return JSON.parse(localStorage.getItem(REVIEWS_KEY)) || {};
-  } catch {
-    return {};
-  }
-}
+import { api } from "../api/client";
 
 function Reviews({ product }) {
   const { currentUser } = useAuth();
 
-  const [userReviews, setUserReviews] = useState(() => loadReviews());
+  const [allReviews, setAllReviews] = useState([]);
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
 
   useEffect(() => {
-    localStorage.setItem(REVIEWS_KEY, JSON.stringify(userReviews));
-  }, [userReviews]);
+    let cancelled = false;
 
-  const ownReviews = userReviews[product.id] || [];
-  const allReviews = [...(product.reviews || []), ...ownReviews];
+    api
+      .get(`/products/${product.id}`)
+      .then((data) => {
+        if (!cancelled) setAllReviews(data.reviews || []);
+      })
+      .catch(() => {
+        if (!cancelled) setAllReviews([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id]);
 
   const totalRating =
     allReviews.length > 0
       ? allReviews.reduce((sum, r) => sum + Number(r.rating), 0) / allReviews.length
       : product.rating || 0;
 
-  const handleSubmit = (e) => {
+  const loadReviews = () => {
+    api
+      .get(`/products/${product.id}`)
+      .then((data) => setAllReviews(data.reviews || []))
+      .catch(() => {
+        // ignore
+      });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!text.trim()) return;
 
-    const review = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      name: (currentUser && currentUser.name) || "عميلة زائرة",
-      rating,
-      text: text.trim(),
-      date: new Date().toISOString(),
-    };
+    try {
+      await api.post(`/products/${product.id}/reviews`, {
+        rating,
+        text: text.trim(),
+      });
 
-    setUserReviews((prev) => ({
-      ...prev,
-      [product.id]: [...(prev[product.id] || []), review],
-    }));
-    setText("");
-    setRating(5);
-  };
-
-  const removeReview = (reviewId) => {
-    setUserReviews((prev) => ({
-      ...prev,
-      [product.id]: (prev[product.id] || []).filter((r) => r.id !== reviewId),
-    }));
+      loadReviews();
+      setText("");
+      setRating(5);
+    } catch {
+      // server error: keep form state
+    }
   };
 
   return (
@@ -121,17 +122,6 @@ function Reviews({ product }) {
                       />
                     ))}
                   </div>
-
-                  {review.id && (
-                    <button
-                      type="button"
-                      onClick={() => removeReview(review.id)}
-                      aria-label="حذف المراجعة"
-                      className="text-gray-600 hover:text-red-400 transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -222,13 +212,6 @@ function Reviews({ product }) {
             <MessageSquare size={17} />
             نشر التقييم
           </button>
-
-          {text.trim() && (
-            <p className="mt-3 text-xs text-green-400 flex items-center gap-1">
-              <Check size={14} />
-              سيتم نشر تقييمك فوراً
-            </p>
-          )}
         </form>
       </div>
     </div>

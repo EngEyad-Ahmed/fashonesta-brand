@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   Check,
@@ -13,11 +13,26 @@ import {
 
 import { useCart } from "../context/CartContext";
 import { useWishlist } from "../context/WishlistContext";
+import { useProducts } from "../context/ProductsContext";
 import { useToast } from "../context/ToastContext";
-import { getProductById, getRelatedProducts } from "../data/products";
+import { swatchFor } from "../data/products";
 import { calcDiscountPercent, formatPrice } from "../utils/format";
+import { api } from "../api/client";
 import ProductCard from "./ProductCard";
 import Reviews from "./Reviews";
+
+function shapeProduct(product) {
+  if (!product) return product;
+
+  return {
+    ...product,
+    gallery: [product.image],
+    swatches: Object.fromEntries(
+      (product.colors || []).map((color) => [color, swatchFor(color)]),
+    ),
+    reviews: [],
+  };
+}
 
 function NotFoundView() {
   return (
@@ -40,21 +55,25 @@ function NotFoundView() {
   );
 }
 
-function ProductPageView({ product }) {
+function ProductPageView({ product, related }) {
   const { addToCart, openCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { showToast } = useToast();
 
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [selectedColor, setSelectedColor] = useState(product.colors[0]);
-  const [selectedSize, setSelectedSize] = useState(product.sizes[0]);
+  const [selectedColor, setSelectedColor] = useState(
+    (product.colors && product.colors[0]) || "",
+  );
+  const [selectedSize, setSelectedSize] = useState(
+    (product.sizes && product.sizes[0]) || "",
+  );
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
 
   const discountPercent = calcDiscountPercent(product.price, product.oldPrice);
   const gallery = product.gallery || [product.image];
   const reviewsCount = (product.reviews || []).length + product.reviewsCount;
-  const relatedProducts = getRelatedProducts(product, 4);
+  const relatedProducts = related || [];
 
   const handleAddToCart = () => {
     addToCart(product, selectedColor, selectedSize, quantity);
@@ -584,17 +603,71 @@ function ProductPageView({ product }) {
   );
 }
 
+function LoadingView() {
+  return (
+    <div dir="rtl" className="bg-[#080808] text-white min-h-screen pt-40 pb-24 px-6">
+      <div className="max-w-xl mx-auto text-center">
+        <p className="text-gray-500 animate-pulse">جارٍ تحميل المنتج...</p>
+      </div>
+    </div>
+  );
+}
+
+function getRelated(productsList, product) {
+  if (!productsList.length) return [];
+
+  const fromCategory = productsList.filter(
+    (p) => p.category === product.category && p.id !== product.id,
+  );
+
+  const pool = fromCategory.length >= 4
+    ? fromCategory
+    : [
+        ...fromCategory,
+        ...productsList.filter(
+          (p) => p.category !== product.category && p.id !== product.id,
+        ),
+      ];
+
+  return pool.slice(0, 4).map(shapeProduct);
+}
+
 function ProductPage() {
   const { id } = useParams();
+  const { products } = useProducts();
 
-  const productId = Number(id);
-  const product = getProductById(productId);
+  const [data, setData] = useState({ product: null, notFound: false });
 
-  if (!product) {
+  useEffect(() => {
+    let cancelled = false;
+
+    api
+      .get(`/products/${Number(id)}`)
+      .then((res) => {
+        if (!cancelled) {
+          setData({ product: shapeProduct(res.product), notFound: false });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setData({ product: null, notFound: true });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (data.notFound) {
     return <NotFoundView />;
   }
 
-  return <ProductPageView key={product.id} product={product} />;
+  if (!data.product || data.product.id !== Number(id)) {
+    return <LoadingView />;
+  }
+
+  const related = getRelated(products, data.product);
+
+  return <ProductPageView key={data.product.id} product={data.product} related={related} />;
 }
 
 export default ProductPage;

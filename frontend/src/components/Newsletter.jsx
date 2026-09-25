@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { Bell, Mail, Send } from "lucide-react";
 import { useToast } from "../context/ToastContext";
-import { uid } from "../utils/format";
-
-const NEWSLETTER_KEY = "fashionistaNewsletterV1";
+import { api } from "../api/client";
 
 function Newsletter() {
   const { showToast } = useToast();
 
   const [email, setEmail] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const trimmedEmail = email.trim();
@@ -21,27 +19,9 @@ function Newsletter() {
     }
 
     try {
-      const raw = localStorage.getItem(NEWSLETTER_KEY);
-      const subscribers = raw ? JSON.parse(raw) : [];
-
-      const alreadySubscribed = subscribers.some(
-        (entry) => entry.email === trimmedEmail,
-      );
-
-      if (alreadySubscribed) {
-        showToast("أنتِ مشتركة بالفعل في نشرتنا", "error");
-        return;
-      }
-
-      subscribers.push({
-        id: uid(),
-        email: trimmedEmail,
-        date: new Date().toISOString(),
-      });
-
-      localStorage.setItem(NEWSLETTER_KEY, JSON.stringify(subscribers));
-    } catch {
-      showToast("تعذر حفظ الاشتراك، حاولي مرة أخرى", "error");
+      await api.post("/newsletter", { email: trimmedEmail });
+    } catch (err) {
+      showToast(err.message || "تعذر الاشتراك، حاولي مرة أخرى", "error");
       return;
     }
 

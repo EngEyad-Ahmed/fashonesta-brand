@@ -1,56 +1,123 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { api } from "../api/client";
+import { swatchFor } from "../data/products";
 
 const WishlistContext = createContext(null);
 
-const WISHLIST_STORAGE_KEY = "fashionistaWishlistV2";
+function shapeProduct(product) {
+  if (!product) return product;
+
+  return {
+    ...product,
+    gallery: [product.image],
+    swatches: Object.fromEntries(
+      (product.colors || []).map((color) => [color, swatchFor(color)]),
+    ),
+  };
+}
 
 export function WishlistProvider({ children }) {
-  const [wishlistItems, setWishlistItems] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(WISHLIST_STORAGE_KEY));
-      return Array.isArray(saved) ? saved : [];
-    } catch {
-      return [];
-    }
-  });
+  const [wishlistItems, setWishlistItems] = useState([]);
+  const [wishlistReady, setWishlistReady] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(wishlistItems));
+    let cancelled = false;
+
+    api
+      .get("/wishlist")
+      .then((data) => {
+        if (!cancelled) {
+          setWishlistItems((data.products || []).map(shapeProduct));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setWishlistItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) setWishlistReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const openWishlist = useCallback(() => setIsWishlistOpen(true), []);
+  const closeWishlist = useCallback(() => setIsWishlistOpen(false), []);
+
+  const isInWishlist = useCallback(
+    (id) => wishlistItems.some((item) => item.id === Number(id)),
+    [wishlistItems],
+  );
+
+  const toggleWishlist = useCallback((product) => {
+    const exists = wishlistItems.some((item) => item.id === product.id);
+
+    setWishlistItems((prev) =>
+      exists
+        ? prev.filter((item) => item.id !== product.id)
+        : [shapeProduct(product), ...prev],
+    );
+
+    const request = exists
+      ? api.del(`/wishlist/${product.id}`)
+      : api.post(`/wishlist/${product.id}`);
+
+    request
+      .then((data) => setWishlistItems((data.products || []).map(shapeProduct)))
+      .catch(() => {
+        // ignore; will reconcile on next load
+      });
   }, [wishlistItems]);
 
-  const openWishlist = () => setIsWishlistOpen(true);
-  const closeWishlist = () => setIsWishlistOpen(false);
+  const removeFromWishlist = useCallback((id) => {
+    setWishlistItems((prev) => prev.filter((item) => item.id !== Number(id)));
 
-  const isInWishlist = (id) => wishlistItems.some((item) => item.id === id);
+    api
+      .del(`/wishlist/${id}`)
+      .then((data) => setWishlistItems((data.products || []).map(shapeProduct)))
+      .catch(() => {
+        // ignore
+      });
+  }, []);
 
-  const toggleWishlist = (product) => {
-    setWishlistItems((prev) =>
-      prev.some((item) => item.id === product.id)
-        ? prev.filter((item) => item.id !== product.id)
-        : [...prev, product],
-    );
-  };
+  const clearWishlist = useCallback(() => {
+    setWishlistItems([]);
 
-  const removeFromWishlist = (id) => {
-    setWishlistItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const clearWishlist = () => setWishlistItems([]);
+    api.del("/wishlist").catch(() => {
+      // ignore
+    });
+  }, []);
 
   const wishlistCount = wishlistItems.length;
 
-  const value = {
-    wishlistItems,
-    wishlistCount,
-    isWishlistOpen,
-    openWishlist,
-    closeWishlist,
-    isInWishlist,
-    toggleWishlist,
-    removeFromWishlist,
-    clearWishlist,
-  };
+  const value = useMemo(
+    () => ({
+      wishlistItems,
+      wishlistCount,
+      wishlistReady,
+      isWishlistOpen,
+      openWishlist,
+      closeWishlist,
+      isInWishlist,
+      toggleWishlist,
+      removeFromWishlist,
+      clearWishlist,
+    }),
+    [
+      wishlistItems,
+      wishlistCount,
+      wishlistReady,
+      isWishlistOpen,
+      openWishlist,
+      closeWishlist,
+      isInWishlist,
+      toggleWishlist,
+      removeFromWishlist,
+      clearWishlist,
+    ],
+  );
 
   return <WishlistContext.Provider value={value}>{children}</WishlistContext.Provider>;
 }

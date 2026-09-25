@@ -7,14 +7,12 @@ import {
   Pencil,
   Plus,
   Trash2,
-  User,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useOrders } from "../context/OrdersContext";
 import { orderStatusLabels } from "../data/orders";
 import { useToast } from "../context/ToastContext";
 import { formatDate, formatPrice } from "../utils/format";
-import { demoUser, DEMO_PHONE, DEMO_PASSWORD } from "../data/demo";
 import AuthForms from "./AuthForms";
 
 const governorates = [
@@ -58,10 +56,7 @@ function AccountProfile() {
     address: "",
   });
 
-  const myOrders = currentUser ? getOrdersFor(currentUser.id) : [];
-
-  const isDemoAccount =
-    currentUser && currentUser.id === demoUser.id;
+  const myOrders = currentUser ? getOrdersFor() : [];
 
   const handleLogout = () => {
     logout();
@@ -85,7 +80,7 @@ function AccountProfile() {
     setShowAddressForm(true);
   };
 
-  const handleSaveAddress = (e) => {
+  const handleSaveAddress = async (e) => {
     e.preventDefault();
 
     if (!addressForm.governorate.trim() || !addressForm.address.trim()) {
@@ -93,10 +88,15 @@ function AccountProfile() {
       return;
     }
 
-    saveAddress({
+    const okay = await saveAddress({
       ...(editingAddress || {}),
       ...addressForm,
     });
+
+    if (!okay) {
+      showToast("تعذر حفظ العنوان، حاولي مرة أخرى", "error");
+      return;
+    }
 
     showToast(editingAddress ? "تم تحديث العنوان" : "تمت إضافة العنوان");
 
@@ -134,12 +134,6 @@ function AccountProfile() {
           <h2 className="font-bold text-lg mb-1">{currentUser.name}</h2>
 
           <p className="text-sm text-gray-400 dir-ltr">{currentUser.phone}</p>
-
-          {isDemoAccount && (
-            <span className="inline-block mt-3 text-xs font-bold text-[#D4AF37] bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-full px-3 py-1">
-              حساب تجريبي
-            </span>
-          )}
 
           <button
             type="button"
@@ -186,7 +180,7 @@ function AccountProfile() {
             <div className="flex justify-between">
               <span>عناوين</span>
               <span className="font-bold text-white">
-                {currentUser.addresses.length}
+                {(currentUser.addresses || []).length}
               </span>
             </div>
 
@@ -212,7 +206,7 @@ function AccountProfile() {
           </h1>
 
           <p className="text-gray-400 leading-7">
-            هنا تظهر بياناتك وعناوينك وطلباتك. كل شيء محفوظ على جهازك.
+            هنا تظهر بياناتك وعناوينك وطلباتك. كل شيء محفوظ بشكل آمن على الخادم.
           </p>
         </div>
 
@@ -243,7 +237,7 @@ function AccountProfile() {
             </button>
           </div>
 
-          {!showAddressForm && currentUser.addresses.length === 0 && (
+          {!showAddressForm && (currentUser.addresses || []).length === 0 && (
             <p className="text-sm text-gray-500">
               لا توجد عناوين محفوظة بعد، أضيفي عنواناً لتسريع عملية الشراء.
             </p>
@@ -374,7 +368,7 @@ function AccountProfile() {
           )}
 
           <div className="space-y-3">
-            {currentUser.addresses.map((address) => (
+            {(currentUser.addresses || []).map((address) => (
               <div
                 key={address.id}
                 className="
@@ -604,15 +598,8 @@ function AccountPage() {
                 <h1 className="text-2xl font-bold mb-2">تسجيل الدخول أو إنشاء حساب</h1>
 
                 <p className="text-sm text-gray-500 leading-7 mb-3">
-                  للحصول على تجربة كاملة، جرّبي الحساب التجريبي الذي يحتوي على
-                  عناوين وطلبات جاهزة.
+                  سجلي أو أنشئي حساباً لتتبعي طلباتك وعناوينك في مكان واحد.
                 </p>
-
-                <div className="p-4 rounded-xl bg-black border border-white/10 text-xs text-gray-500 mb-6 flex items-center gap-2">
-                  <span className="text-[#D4AF37] font-bold">بيانات تجريبية:</span>
-                  <span dir="ltr">{DEMO_PHONE} / {DEMO_PASSWORD}</span>
-                  <User size={14} className="text-[#D4AF37] mr-auto" />
-                </div>
               </div>
             </div>
 

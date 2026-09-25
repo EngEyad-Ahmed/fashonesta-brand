@@ -7,180 +7,48 @@ import {
   useState,
 } from "react";
 import { useAuth } from "./AuthContext";
-import { products } from "../data/products";
-import { demoUser } from "../data/demo";
-import { parsePrice } from "../utils/format";
+import { api } from "../api/client";
 
 const OrdersContext = createContext(null);
 
-const ORDERS_KEY = "fashionistaOrdersV1";
-
-function loadOrders() {
-  try {
-    const raw = localStorage.getItem(ORDERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function findProduct(id) {
-  return products.find((product) => product.id === id);
-}
-
-function makeItem(productId, quantity, color, size) {
-  const product = findProduct(productId);
-
-  return {
-    id: product.id,
-    name: product.name,
-    image: product.image,
-    category: product.category,
-    type: product.type,
-    price: product.price,
-    quantity,
-    selectedColor: color,
-    selectedSize: size,
-  };
-}
-
-function buildDemoOrders() {
-  const orderOneItems = [
-    makeItem(1, 1, "أسود في أبيض", "M"),
-    makeItem(7, 2, "أبيض", "L"),
-  ];
-
-  const orderTwoItems = [makeItem(12, 2, "بني", "8 سنوات")];
-
-  const orderThreeItems = [makeItem(14, 1, "أسود", "S")];
-
-  const subtotalOne = orderOneItems.reduce(
-    (total, item) => total + parsePrice(item.price) * item.quantity,
-    0,
-  );
-
-  const subtotalTwo = orderTwoItems.reduce(
-    (total, item) => total + parsePrice(item.price) * item.quantity,
-    0,
-  );
-
-  const subtotalThree = orderThreeItems.reduce(
-    (total, item) => total + parsePrice(item.price) * item.quantity,
-    0,
-  );
-
-  return [
-    {
-      id: "DEMO-2001",
-      date: "2026-08-14T12:00:00.000Z",
-      ownerKey: demoUser.id,
-      status: "delivered",
-      items: orderOneItems,
-      subtotal: subtotalOne,
-      discount: 0,
-      shippingCost: 0,
-      total: subtotalOne,
-      payment: "cod",
-      shipping: {
-        name: demoUser.name,
-        phone: demoUser.phone,
-        governorate: "الإسكندرية",
-        address: demoUser.addresses[0].address,
-      },
-    },
-    {
-      id: "DEMO-2002",
-      date: "2026-09-02T15:30:00.000Z",
-      ownerKey: demoUser.id,
-      status: "shipped",
-      items: orderTwoItems,
-      subtotal: subtotalTwo,
-      discount: 0,
-      shippingCost: 60,
-      total: subtotalTwo + 60,
-      payment: "whatsapp",
-      shipping: {
-        name: demoUser.name,
-        phone: demoUser.phone,
-        governorate: "القاهرة",
-        address: demoUser.addresses[1].address,
-      },
-    },
-    {
-      id: "DEMO-2003",
-      date: "2026-09-18T09:00:00.000Z",
-      ownerKey: demoUser.id,
-      status: "pending",
-      items: orderThreeItems,
-      subtotal: subtotalThree,
-      discount: 60,
-      shippingCost: 60,
-      total: subtotalThree,
-      payment: "cod",
-      shipping: {
-        name: demoUser.name,
-        phone: demoUser.phone,
-        governorate: "البحيرة",
-        address: "شارع الجمهورية، برج المعمورة، دمنهور",
-      },
-    },
-  ];
-}
-
 export function OrdersProvider({ children }) {
-  const { currentUser, getGuestId } = useAuth();
+  const { authReady } = useAuth();
 
-  const [orders, setOrders] = useState(() => {
-    const saved = loadOrders();
-
-    if (saved.some((order) => String(order.id).startsWith("DEMO-"))) {
-      return saved;
-    }
-
-    return [...saved, ...buildDemoOrders()];
-  });
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
-  }, [orders]);
+    if (!authReady) return;
 
-  const createOrder = useCallback(
-    (payload) => {
-      const ownerKey =
-        (currentUser && currentUser.id) || getGuestId() || "guest";
+    let cancelled = false;
 
-      const order = {
-        id: `FAS-${Date.now().toString().slice(-6)}-${Math.random()
-          .toString(36)
-          .slice(2, 5)
-          .toUpperCase()}`,
-        date: new Date().toISOString(),
-        ownerKey,
-        status: "pending",
-        note: "",
-        ...payload,
-      };
+    api
+      .get("/orders")
+      .then((data) => {
+        if (!cancelled) {
+          const list = Array.isArray(data.orders) ? data.orders : [];
+          setOrders(list);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setOrders([]);
+      });
 
-      setOrders((prev) => [order, ...prev]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady]);
 
-      return order;
-    },
-    [currentUser, getGuestId],
-  );
+  const createOrder = useCallback(async (payload) => {
+    const data = await api.post("/orders", payload);
 
-  const updateOrderStatus = useCallback((orderId, status) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status } : o)),
-    );
+    if (data.order) {
+      setOrders((prev) => [data.order, ...prev]);
+    }
+
+    return data.order;
   }, []);
 
-  const getOrdersFor = useCallback(
-    (ownerKey) => {
-      if (!ownerKey) return [];
-      return orders.filter((o) => o.ownerKey === ownerKey);
-    },
-    [orders],
-  );
+  const getOrdersFor = useCallback(() => orders, [orders]);
 
   const getOrderById = useCallback(
     (orderId) => orders.find((o) => o.id === orderId) || null,
@@ -191,11 +59,10 @@ export function OrdersProvider({ children }) {
     () => ({
       orders,
       createOrder,
-      updateOrderStatus,
       getOrdersFor,
       getOrderById,
     }),
-    [orders, createOrder, updateOrderStatus, getOrdersFor, getOrderById],
+    [orders, createOrder, getOrdersFor, getOrderById],
   );
 
   return <OrdersContext.Provider value={value}>{children}</OrdersContext.Provider>;

@@ -6,183 +6,115 @@ import {
   useMemo,
   useState,
 } from "react";
-import { uid } from "../utils/format";
-import { demoUser } from "../data/demo";
+import { api } from "../api/client";
 
 const AuthContext = createContext(null);
 
-const USERS_KEY = "fashionistaUsersV1";
-const SESSION_KEY = "fashionistaSessionV1";
-const GUEST_KEY = "fashionistaGuestIdV1";
-
-function load(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function loadUsers() {
-  const saved = load(USERS_KEY, []);
-
-  if (!saved.some((u) => u.id === demoUser.id)) {
-    return [...saved, demoUser];
-  }
-
-  return saved;
-}
-
 export function AuthProvider({ children }) {
-  const [users, setUsers] = useState(() => loadUsers());
-  const [currentUser, setCurrentUser] = useState(() => load(SESSION_KEY, null));
+  const [currentUser, setCurrentUser] = useState(null);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  }, [users]);
+    let cancelled = false;
 
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
-    } else {
-      localStorage.removeItem(SESSION_KEY);
-    }
-  }, [currentUser]);
+    api
+      .get("/auth/me")
+      .then((data) => {
+        if (!cancelled) setCurrentUser(data.user);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAuthReady(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const openAuth = useCallback(() => setIsAuthOpen(true), []);
   const closeAuth = useCallback(() => setIsAuthOpen(false), []);
 
-  const register = useCallback(
-    ({ name, phone, password }) => {
-      const trimmedName = String(name || "").trim();
-      const trimmedPhone = String(phone || "").trim();
-      const trimmedPassword = String(password || "");
+  const register = useCallback(async ({ name, phone, password }) => {
+    try {
+      await api.post("/auth/register", { name, phone, password });
 
-      if (trimmedName.length < 2) {
-        return { ok: false, error: "من فضلك اكتبي اسمك بالكامل" };
-      }
-
-      if (!/^01[0-9]{9}$/.test(trimmedPhone)) {
-        return { ok: false, error: "رقم الهاتف غير صحيح (مثال: 01000000000)" };
-      }
-
-      if (trimmedPassword.length < 6) {
-        return { ok: false, error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" };
-      }
-
-      if (users.some((u) => u.phone === trimmedPhone)) {
-        return { ok: false, error: "هذا الرقم مسجل بالفعل، سجلي الدخول" };
-      }
-
-      const newUser = {
-        id: uid(),
-        name: trimmedName,
-        phone: trimmedPhone,
-        password: trimmedPassword,
-        addresses: [],
-        createdAt: new Date().toISOString(),
-      };
-
-      setUsers((prev) => [...prev, newUser]);
-      setCurrentUser(newUser);
+      const data = await api.get("/auth/me");
+      setCurrentUser(data.user);
 
       return { ok: true, error: null };
-    },
-    [users],
-  );
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  }, []);
 
-  const login = useCallback(
-    ({ phone, password }) => {
-      const trimmedPhone = String(phone || "").trim();
-      const trimmedPassword = String(password || "");
+  const login = useCallback(async ({ phone, password }) => {
+    try {
+      await api.post("/auth/login", { phone, password });
 
-      const user = users.find((u) => u.phone === trimmedPhone);
-
-      if (!user) {
-        return { ok: false, error: "لا يوجد حساب بهذا الرقم" };
-      }
-
-      if (user.password !== trimmedPassword) {
-        return { ok: false, error: "كلمة المرور غير صحيحة" };
-      }
-
-      setCurrentUser(user);
+      const data = await api.get("/auth/me");
+      setCurrentUser(data.user);
 
       return { ok: true, error: null };
-    },
-    [users],
-  );
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    try {
+      await api.post("/auth/logout");
+    } catch {
+      // ignore network errors on logout
+    }
     setCurrentUser(null);
   }, []);
 
   const saveAddress = useCallback(
-    (address) => {
+    async (address) => {
       if (!currentUser) return false;
 
-      const addressToSave = address.id
-        ? address
-        : { ...address, id: uid(), label: address.label || "منزل" };
+      try {
+        const data = address.id
+          ? await api.put(`/account/addresses/${address.id}`, address)
+          : await api.post("/account/addresses", address);
 
-      const updatedUser = {
-        ...currentUser,
-        addresses: address.id
-          ? currentUser.addresses.map((a) =>
-              a.id === address.id ? addressToSave : a,
-            )
-          : [...currentUser.addresses, addressToSave],
-      };
+        setCurrentUser((prev) =>
+          prev ? { ...prev, addresses: data.addresses } : prev,
+        );
 
-      setCurrentUser(updatedUser);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
-      );
-
-      return true;
+        return true;
+      } catch {
+        return false;
+      }
     },
     [currentUser],
   );
 
   const removeAddress = useCallback(
-    (addressId) => {
+    async (addressId) => {
       if (!currentUser) return;
 
-      const updatedUser = {
-        ...currentUser,
-        addresses: currentUser.addresses.filter((a) => a.id !== addressId),
-      };
-
-      setCurrentUser(updatedUser);
-      setUsers((prev) =>
-        prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)),
-      );
+      try {
+        const data = await api.del(`/account/addresses/${addressId}`);
+        setCurrentUser((prev) =>
+          prev ? { ...prev, addresses: data.addresses } : prev,
+        );
+      } catch {
+        // ignore
+      }
     },
     [currentUser],
   );
 
-  const getGuestId = useCallback(() => {
-    try {
-      let guestId = localStorage.getItem(GUEST_KEY);
-
-      if (!guestId) {
-        guestId = `guest-${uid()}`;
-        localStorage.setItem(GUEST_KEY, guestId);
-      }
-
-      return guestId;
-    } catch {
-      return `guest-${uid()}`;
-    }
-  }, []);
-
   const value = useMemo(
     () => ({
-      users,
       currentUser,
       isAuthOpen,
+      authReady,
       openAuth,
       closeAuth,
       register,
@@ -190,12 +122,11 @@ export function AuthProvider({ children }) {
       logout,
       saveAddress,
       removeAddress,
-      getGuestId,
     }),
     [
-      users,
       currentUser,
       isAuthOpen,
+      authReady,
       openAuth,
       closeAuth,
       register,
@@ -203,7 +134,6 @@ export function AuthProvider({ children }) {
       logout,
       saveAddress,
       removeAddress,
-      getGuestId,
     ],
   );
 
